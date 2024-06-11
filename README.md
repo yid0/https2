@@ -1,4 +1,4 @@
-# https2
+# https2 🚀
 
 ## Description
 **https2** is a native Node.js HTTP server with support for HTTPS and HTTP/2 protocols.
@@ -19,12 +19,12 @@
 
 ## TODO
 
-[-] Fix docker image building
+        [-] Fix docker image building
 
-[-] Support http POST actions
+        [-] Support http POST actions
 
-[-] Add unit & acceptance tests
+        [-] Add unit & acceptance tests
 
-[-] Add kuberenetes deploy configuration
+        [-] Add kubernetes deploy configuration
 
-[-] Add ci/cd
+        [-] Add ci/cd
