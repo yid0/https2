@@ -10,11 +10,11 @@
 ## Usage in Development Environment
 1. To start the server in development mode, run:
 
-    npm run start:dev
-    
+        npm run start:dev
+
 2. To build the server run:
 
-    npm run start:build
+        npm run start:build
 
 
 ## TODO
