@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@tsconfig/node-lts/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "@": [
+        "./src"
+      ],
+      "@/*": [
+        "./src/*"
+      ],
+      "@application": [
+        "./src/application"
+      ],
+      "@application/*": [
+        "./src/application/*"
+      ],
+      "@domain": [
+        "./src/domain"
+      ],
+      "@domain/*": [
+        "./src/domain/*"
+      ]
+    },
+    "outDir": "dist",
+    "incremental": true,
+    "sourceMap": true,
+    "declaration": true
+  },
+  "include": [
+    "src/**/*",
+    "!src/___tests___/*.ts",
+  ], 
+  "exclude": [
+    "node_modules",
+    "certs",
+    "src/___tests___/*.ts",
+    "node_modules/**",
+    "**/*.d.ts"
+  ]
+}

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: https2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: https2
+  template:
+    metadata:
+      labels:
+        app: https2
+    spec:
+      containers:
+      - name: https2
+        image: https2
+        ports:
+        - containerPort: 3000
+        - containerPort: 8443
+        - containerPort: 9443
