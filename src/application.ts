@@ -23,9 +23,7 @@ export class Application implements IApplication {
   router!: IRouter;
 
   build(config?: Partial<ServerDefinition | any>): Application {
-    // TODO: ensure that the passed config will ovveride the default one
     this.config = setGlobalConfigApp();
-    console.log(this.config)
     return this;
   }
 
@@ -63,11 +61,7 @@ export class Application implements IApplication {
             router: this.router,
             port: (this.config as any)[key].port
           });
-          // TODO : fix number of cores issue
-          console.log((this.config as any)[key])
-          // if( ['http2', 'https'].includes((this.config as any)[key])) {
-          //   this.config.https.options = options 
-          // }
+      
           this.numCPUs = (this.config as any)[key].cores ?? os.availableParallelism();
           strategy.serverOptions = this.config[strategy.key].options as any;
 
