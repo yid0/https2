@@ -8,12 +8,16 @@ export type IConfig = {
 
 export function setGlobalConfigApp(config?: Partial<ServerDefinition>) {
 
+  console.log("CERTS_PATH", process.env.CERTS_PATH)
+
+  if (!process.env.CERTS_PATH) {
+    throw new TypeError('CERTS_PATH value was missing !')
+  }
   const options = {
-    key: fs.readFileSync(join(__dirname, '..', '/certs/localhost-privkey.pem'), 'utf8').replace(/\\n/g, '\n').toString(),
-    cert: fs.readFileSync(join(__dirname, '..', '/certs/localhost-cert.pem'), 'utf8').replace(/\\n/g, '\n').toString(),
+    key: fs.readFileSync(join(__dirname, '..',  process.env.CERTS_PATH, '/localhost-privkey.pem'), 'utf8').replace(/\\n/g, '\n').toString(),
+    cert: fs.readFileSync(join(__dirname, '..', process.env.CERTS_PATH, '/localhost-cert.pem'), 'utf8').replace(/\\n/g, '\n').toString(),
   };
 
-  console.log(options)
   return {
     http: {
       key: 'http',

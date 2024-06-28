@@ -70,12 +70,13 @@ export class RouterDispatcher implements IRouter {
       this.response = response;
 
       if (process.env.MODE as any !== 'event') {
+        console.log("process.env.MODE ",process.env.MODE )
         return new ResponseFlyweight<BaseResponse>().getResponse(this.response).adapt(this.bodyType);
       } else {
-        return await Promise.resolve(this.event.emit('response', this.response as BaseResponse, {
+        return this.event.emit('response', this.response as BaseResponse, {
           body,
           extension: this.bodyType
-        }));
+        });
       }
     } catch (err: any) {
       throw new RouterError(`fetch binding ${err.name}: ${JSON.stringify(err)}`);

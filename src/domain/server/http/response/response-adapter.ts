@@ -39,8 +39,8 @@ export class ResponseAdapter extends HttpResponse {
     super(response);
   }
 
-  async adapt(mime?: Mime) {
-    return await Promise.resolve(this.sendDefaultResponse(this.getBodyString(), mime || 'text/html'));
+  adapt(mime?: Mime) {
+    return this.sendDefaultResponse(this.getBodyString(), mime || 'text/html');
   }
 
   apply(mime?: Mime) {
@@ -59,7 +59,7 @@ export class ResponseAdapter extends HttpResponse {
         this.response.writeHead(this.response.statusCode || 500, this.setCssHeaders(stringBody));
         return this.response.end(stringBody);
       default:
-        this.send404('<h3> Page not Found !</h3>');
+        return this.send404('<h3> Page not Found !</h3>');
     }
   }
 

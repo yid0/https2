@@ -19,6 +19,7 @@ export class ResponseFlyweight<T> {
   }
 
   getResponse(originalResponse: BaseResponse, options?: any) {
+    console.log(originalResponse)
     return new Proxy(new ResponseAdapter(originalResponse), {
       get: (target, prop: string) => {
         if (prop === 'body') {

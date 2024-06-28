@@ -1,4 +1,3 @@
-import { HttpRequestLike } from '../../domain/server/http/request/request';
 import { BaseRequest, BaseResponse } from '../types';
 
 export class StatusController {
@@ -11,6 +10,7 @@ export class StatusController {
       version: process.env.VERSION,
       path: request.url,
       httpVersion: request.httpVersion,
+      statusCode: response.statusCode,
       details: {
         ...request.socket.address(), protocol: request.headers[':scheme'],
         cookie: request.headers.cookie

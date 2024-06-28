@@ -56,12 +56,20 @@ export class HttpServer extends Server implements IServer {
     this.server.on('request', async (request: any, response: any) => {
       let body = '';
       // TODO: support http POST and body process 
-      
-      return this.dispatch(request, response);
+
 
       request.on('data', (chunk: any) => {
         body += chunk;
       });
+
+      console.log("BODY", body)
+
+      if (!body && request === 'GET') {
+        if (process.env.MODE === 'event')
+          await Promise.resolve(this.router.event.emit('fetch', request, response));
+        else
+          return this.dispatch(request, response);
+      }
 
       const getProtocol = (req: any) => {
         let proto = req.connection.encrypted ? 'https' : 'http';
@@ -79,8 +87,9 @@ export class HttpServer extends Server implements IServer {
 
       if (process.env.MODE === 'event')
         await Promise.resolve(this.router.event.emit('fetch', request, response));
+
       else
-        await this.router.fetch(request, response);
+        return this.dispatch(request, response);
     });
   }
 

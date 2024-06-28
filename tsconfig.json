@@ -33,11 +33,11 @@
   "include": [
     "src/**/*",
     "!src/___tests___/*.ts",
-  ], 
+    "*.pem"
+  ],
   "exclude": [
     "node_modules",
-    "certs",
-    "src/___tests___/*.ts",
+    "./src/___tests___/*.ts",
     "node_modules/**",
     "**/*.d.ts"
   ]
