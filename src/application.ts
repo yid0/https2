@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as os from 'node:os';
-import { IConfig, setGlobalConfigApp } from './config/application-config';
-import { ClusterManager, ICluster } from './domain/cluster/cluster-manager';
-import { ApplicationError } from './domain/error/error';
-import { RouteOption } from './domain/middleware';
-import { RouterFactory } from './domain/router';
-import { ServerManager } from './domain/server';
-import { ServerStrategyFactory } from './domain/server/strategy';
-import { IRouter, ServerDefinition, ServerType } from './domain/types';
+import {IConfig, setGlobalConfigApp} from './config/application-config';
+import {ClusterManager, ICluster} from './domain/cluster/cluster-manager';
+import {ApplicationError} from './domain/error/error';
+import {RouteOption} from './domain/middleware';
+import {RouterFactory} from './domain/router';
+import {ServerManager} from './domain/server';
+import {ServerStrategyFactory} from './domain/server/strategy';
+import {IRouter, ServerDefinition, ServerType} from './domain/types';
 interface IApplication {
   before?: Set<RouteOption>;
   after?: Set<RouteOption>;
@@ -22,6 +22,13 @@ export class Application implements IApplication {
   static instance: Application;
   router!: IRouter;
 
+  static getInstance(config?: IConfig): Application {
+    if(typeof Application.instance ==='undefined'){
+      return new Application();
+    }
+    return Application.instance;
+  }
+
   build(config?: Partial<ServerDefinition | any>): Application {
     this.config = setGlobalConfigApp();
     return this;
@@ -31,9 +38,6 @@ export class Application implements IApplication {
     this.cluster = new ClusterManager(this.serverManager, this.config);
   }
 
-  static getInstance(config?: IConfig): Application {
-    return Application.instance;
-  }
   getCluster() {
     return this.cluster;
   }
@@ -50,33 +54,34 @@ export class Application implements IApplication {
 
   private initServerStrategy() {
     try {
-
       this.initRouter();
 
-      ((process.env.SERVER_TYPE || 'http') as ServerType).split(',').filter(type => type !== '').forEach((key) => {
+      ((process.env.SERVER_TYPE || 'http') as ServerType)
+        .split(',')
+        .filter(type => type !== '')
+        .forEach(key => {
+          if ((this.config as any)[key].cores && (this.config as any)[key].enable) {
+            const strategy = ServerStrategyFactory.create(key as ServerType, {
+              router: this.router,
+              port: (this.config as any)[key].port,
+            });
 
-        if ((this.config as any)[key].cores && (this.config as any)[key].enable) {
+            this.numCPUs = (this.config as any)[key].cores ?? os.availableParallelism();
+            strategy.serverOptions = this.config[strategy.key].options as any;
 
-          const strategy = ServerStrategyFactory.create(key as ServerType, {
-            router: this.router,
-            port: (this.config as any)[key].port
-          });
-      
-          this.numCPUs = (this.config as any)[key].cores ?? os.availableParallelism();
-          strategy.serverOptions = this.config[strategy.key].options as any;
-
-          this.initServerManager().addStrategy(strategy);
-        } else {
-          throw new ApplicationError(`${key} strategy is not defined, please check your configuration !`)
-        }
-      });
+            this.initServerManager().addStrategy(strategy);
+          } else {
+            throw new ApplicationError(
+              `${key} strategy is not defined, please check your configuration !`,
+            );
+          }
+        });
     } catch (error: any) {
       throw new ApplicationError(error.message);
     }
-
   }
 
-  run() {
+  run() : Application  {
     this.initServerManager();
     this.initServerStrategy();
     this.initCluster();

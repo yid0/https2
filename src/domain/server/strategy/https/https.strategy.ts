@@ -1,12 +1,11 @@
-import { SecureServerOptions } from 'http2';
+import {SecureServerOptions} from 'http2';
 import * as https from 'node:https';
-import { IServer } from '../..';
-import { IRouter, ServerType } from '../../../types';
-import { HttpsServer } from '../../https/https.server';
-import { IServerStrategy } from '../strategy';
+import {IServer} from '../..';
+import {IRouter, ServerType} from '../../../types';
+import {HttpsServer} from '../../https/https.server';
+import {IServerStrategy} from '../strategy';
 
-export class HttpsServerStrategy
-  implements IServerStrategy {
+export class HttpsServerStrategy implements IServerStrategy {
   readonly key: ServerType = 'https';
   port: number;
   server!: IServer;
@@ -16,7 +15,6 @@ export class HttpsServerStrategy
     this.port = port;
     this.router = router;
   }
-
 
   apply(port: number, serverOptions: https.ServerOptions): void {
     console.log(`Creating a new ${HttpsServerStrategy.name} : ${this.key}`);

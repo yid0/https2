@@ -1,7 +1,7 @@
 import * as https from 'https';
-import { Socket } from 'net';
-import { IRouter } from '../../types';
-import { IServer, Server } from '../server';
+import {Socket} from 'net';
+import {IRouter} from '../../types';
+import {IServer, Server} from '../server';
 
 export class HttpsServer extends Server implements IServer {
   private server: https.Server;

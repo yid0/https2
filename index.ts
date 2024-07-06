@@ -1,1 +1,1 @@
-export { Application } from './src';
+export {Application} from './src';

@@ -1,11 +1,10 @@
 import * as http2 from 'node:http2';
-import { IServer } from '../..';
-import { IRouter, ServerType } from '../../../types';
-import { Http2Server } from '../../http2/http2.server';
-import { IServerStrategy } from '../strategy';
+import {IServer} from '../..';
+import {IRouter, ServerType} from '../../../types';
+import {Http2Server} from '../../http2/http2.server';
+import {IServerStrategy} from '../strategy';
 
-export class Http2ServerStrategy
-  implements IServerStrategy {
+export class Http2ServerStrategy implements IServerStrategy {
   readonly key: ServerType = 'http2';
   readonly port: number;
   server!: IServer;
@@ -17,7 +16,6 @@ export class Http2ServerStrategy
     this.router = router;
   }
 
-
   apply(port: number, serverOptions: http2.ServerOptions): void {
     console.log(`Creating a new ${Http2ServerStrategy.name} : ${this.key}`);
     this.serverOptions = serverOptions;
@@ -25,6 +23,4 @@ export class Http2ServerStrategy
     this.server = serverBuilder.build();
     this.server.start(port, serverOptions);
   }
-
-
 }
