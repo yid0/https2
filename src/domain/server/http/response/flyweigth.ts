@@ -14,8 +14,7 @@ export class ResponseFlyweight<T> {
 
   emitOnce() : void {
      this.event.once(
-      'response',
-      async (originalResponse: BaseResponse, options: any = {}) => {
+      'response', (originalResponse: BaseResponse, options: any = {}) => {
         return this.getResponse(originalResponse, options);
       },
     );

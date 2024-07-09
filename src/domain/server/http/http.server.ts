@@ -50,10 +50,9 @@ export class HttpServer extends Server implements IServer {
   };
 
   onRequest() {
-    this.server.on('request', async (request: any, response: any) => {
+    this.server.on('request', (request: any, response: any) => {
       let body = '';
       // TODO: support http POST and body process
-
       if(['POST', 'PUT'].includes(request.method))
         request.on('data', (chunk: any) => {
           body += chunk;

@@ -24,14 +24,14 @@ describe('RouterDispatcher test suites ... :', () => {
       method: 'GET',
       handler: TestController.prototype.testOk,
     });
-    expectedRoute = router.routes.get(`${route.method}:${route.path}`) as HttpRoute;
+    expectedRoute = router.routes[`${route.path}` as any] as HttpRoute;
   });
   test('should get defined router an routes', () => {
     expect(router).to.be.toBeDefined();
     expect(router.routes).to.be.toBeDefined();
     expect(route).to.be.toBeDefined();
     expect(expectedRoute).to.be.toBeDefined();
-    expect(router.routes.size).to.be.equal(1);
+    expect(router.routes.length).to.be.equal(1);
     expect(router.routes).to.be.contain(expectedRoute);
   });
 

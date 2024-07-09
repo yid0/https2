@@ -13,12 +13,11 @@ export class Server extends https.Server implements IServer {
   type = Symbol(Server.name);
   router!: IRouter;
 
-  dispatch(request: BaseRequest, response: BaseResponse) : void {
+  dispatch(request: BaseRequest, response: BaseResponse)  {
      if(process.env.MODE === 'event')
        this.router.event.emit('fetch', request, response);
     else
       return this.router.fetch(request, response);
-
   }
 
   start(port: number): void {
@@ -26,8 +25,8 @@ export class Server extends https.Server implements IServer {
   }
 
   send() {
-    this.router.event.on('response', async (response, options) => {   
-      return new ResponseAdapter(response).reply(options.body, options.extension);
+    this.router.event.on('response', (response, options) => {   
+      return new ResponseAdapter(response).reply(options.extension);
     });
   }
 }

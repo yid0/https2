@@ -5,6 +5,7 @@ import {Application} from '../application';
 import {RouteOption} from './middleware';
 import {HttpResponseLike} from './server/http/response/response';
 import {BodyInit} from 'node-fetch';
+import { ResponseAdapter } from './server/http/response/response-adapter';
 
 export type BaseRequest = (http2.Http2ServerRequest | IncomingMessage) & {
   body: object | BodyInit;
@@ -12,7 +13,7 @@ export type BaseRequest = (http2.Http2ServerRequest | IncomingMessage) & {
 
 export type BaseResponse = Response &
   http2.Http2ServerResponse &
-  OutgoingMessage & {body:  {}};
+  OutgoingMessage & {body : unknown | object};
 
 export type httpMethod =
   | ('GET' | 'get')
@@ -34,7 +35,8 @@ export type MimeType =
   | 'javascript'
   | 'ico'
   | 'jpeg'
-  | 'jpg';
+  | 'jpg'
+  | null;
 
 export type FunctionLike = () => unknown | void;
 
@@ -52,7 +54,7 @@ export interface HttpRoute {
 export type IRouter = {
   type: RouterDispatcherType;
   request: BaseRequest;
-  response: BaseResponse;
+  response: ResponseAdapter;
   event: EventEmitter;
   fetch(request: BaseRequest, response?: BaseResponse, dispatch?: () => void): any;
   get(path: string, middleware?: RouteOption, ...middlewares: ChainedMiddleware): any;

@@ -27,14 +27,13 @@ export class RouterDispatcher implements IRouter {
   regex!: RegExp;
   type!: RouterDispatcherType;
   request!: BaseRequest;
-  response!: BaseResponse;
+  response!: ResponseAdapter;
   event: EventEmitter;
   private bodyType!: MimeType;
 
   constructor(
     type: RouterDispatcherType,
-    private defaultHandler?: Handler,
-    public routes: Map<string, HttpRoute> = new Map(),
+    public routes: HttpRoute[]  = []
   ) {
     this.type = type;
     this.event = new EventEmitter();
@@ -66,29 +65,30 @@ export class RouterDispatcher implements IRouter {
     try {
       
       this.request = request;
-      const body = await this.route(this.request,response);     
-      this.response = response;
 
+      await this.route(this.request,response);
+
+      //console.log( 'RS', response )
       if (process.env.MODE !== 'event') {
         return new ResponseFlyweight<ResponseAdapter>()
-          .getResponse(this.response, { body })
-          .reply(body, this.bodyType);
+          .getResponse(response)
+          .reply(response.body, this.bodyType);
       } else {
-        return this.event.emit('response', this.response, {
-          body,
+        return this.event.emit('response', response, {
+          body:  response.body,
           extension: this.bodyType,
         });
-      }
+      }   
     } catch (err: any) {
-      throw new RouterError(`fetch binding ${err.name}: ${JSON.stringify(err)}`);
+      throw new RouterError(`fetch binding ${err.name}: ${err.stack}`);
     }
   }
 
   async route(request: any, response: BaseResponse, forward?: () => void): Promise<ResponseAdapter | unknown> {
-    for (const [path, expectedRoute] of this.routes) {
-      //console.log(path, expectedRoute)
+    let body;
+    for ( let expectedRoute of this.routes) {
       if (
-        expectedRoute.path.test(`${request.method}:${request.url}`) &&
+        expectedRoute.path.test(request.url) &&
         (expectedRoute.handler || expectedRoute.middleware?.handler)
       ) {
 
@@ -100,11 +100,12 @@ export class RouterDispatcher implements IRouter {
               }),
             );
           }
-          //console.log(expectedRoute.path.test(request.url) , expectedRoute.path.test(`${request.method}:${request.url}`))
 
-          const body = await Promise.resolve(
+          body = await Promise.resolve(
             (expectedRoute.handler as DispatchFunction)(request, response),
-          );
+          ) as unknown as any;
+
+           response.body = body;   
 
           if (expectedRoute.middleware?.after?.length) {
             await Promise.resolve(
@@ -113,11 +114,10 @@ export class RouterDispatcher implements IRouter {
               }),
             );
           }
-
-          return typeof body === 'undefined' ?  this.defaultHandler!(request, response) :  this.reply(body);
-        }
+          return this.reply(body);
       } 
     }
+   }
 
   }
 
@@ -127,59 +127,78 @@ export class RouterDispatcher implements IRouter {
       case 'object':
         this.bodyType = 'json';
         return body;
-      case 'string':
+      default:
         this.bodyType = 'html';
         return body;
-      default:
-        throw new RouterError(`response type not supported, got : ${this.bodyType}`);
     }
   }
 
   add(route: HttpRoute) : HttpRoute{
-    console.log('ADD method');
 
-    //const route = { method, path: this.onInit(path), handler : middleware?.handler, middleware };
-    this.routes.set(`${route.method}:${route.path}`, {
+    this.routes.push( {
       ...route,
+      path  : this.onInit("GET:"+ route.path),
     });
     return route;
   }
 
   any(path: string, handler: Handler) :void {
-    this.routes.set(path, {method: 'ANY', path: this.onInit(path), handler});
+    this.routes.push({method: 'ANY', path: this.onInit(path), handler});
   }
 
   delete(path: string, middleware: ChainedMiddleware, handler: Handler) :void {
-    //return this.routes[path] = { method: 'DELETE', path: this.onInit(path), handler };
+    this.routes.push({method: 'DELETE', path: this.onInit(path), handler});
   }
 
   get(path: string, middleware: RouteOption) :void{
-    this.routes.set(this.onInit("GET:"+path).source, {
+    this.routes.push( {
       method: 'GET',
-      path: this.onInit("GET:"+path),
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });
+  }
+  
+  head(path: string, middleware: RouteOption) :void {
+    this.routes.push( {
+      method: 'HEAD',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    }); 
+  }
+
+  options(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'OPTION',
+      path: this.onInit(path),
       handler: middleware.handler,
       middleware,
     });
   }
 
-  head(path: string, middleware: ChainedMiddleware, handler?: Handler) :void {
-    //this.routes[path] = { method: 'HEAD', path: this.onInit(path), handler };
-  }
-  options(path: string, handler: Handler) :void{
-    //this.routes[path] = { method: 'OPTIONS', path: this.onInit(path), handler };
-  }
-  patch(path: string, middleware: ChainedMiddleware, handler?: Handler) :void{
-    //this.routes[path] = { method: 'PATCH', path: this.onInit(path), handler };
+  patch(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'PATCH',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });  
   }
   post(path: string, middleware: RouteOption) :void{
-    this.routes.set(this.onInit("POST:"+path).source, {
+    this.routes.push( {
       method: 'POST',
-      path: this.onInit("POST:"+path),
+      path: this.onInit(path),
       handler: middleware.handler,
       middleware,
     });
   }
-  put(path: string, middleware: ChainedMiddleware, handler?: Handler) :void{
-    // this.routes[path] = { method: 'PUT', path: this.onInit(path), handler };
+  put(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'PUT',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });  
   }
 }

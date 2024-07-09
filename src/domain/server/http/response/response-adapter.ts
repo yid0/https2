@@ -38,16 +38,14 @@ export class ResponseAdapter extends HttpResponse {
   }
 
   reply(body: unknown, mime?: MimeType) {
-    this.body = body;
-    return this.sendDefaultResponse(this.getBodyString(), mime || 'text/html');
-  }
+
+    return this.sendDefaultResponse(this.getBodyString(), mime || 'text/html');  }
 
 
 
   sendDefaultResponse(bodyString: string, mime: string): BaseResponse {
     switch (mime) {
       case 'html':
-       
           this.response.writeHead(
             this.response.statusCode || 500,
             this.setHtmlHeaders(bodyString),
@@ -58,8 +56,7 @@ export class ResponseAdapter extends HttpResponse {
        
           this.response.writeHead(
             this.response.statusCode || 500,
-            this.setJsonHeaders(bodyString),
-          
+            this.setJsonHeaders(bodyString),         
         );
         return  this.response.end(bodyString);
       case 'css':
@@ -71,10 +68,6 @@ export class ResponseAdapter extends HttpResponse {
       default:
         return this.send404('<h3> Page not Found ! </h3>');
     }
-  }
-
-  static notFound(request: BaseRequest, response: any) {
-    return this.prototype.send404('<h3> Page not Found ! </h3>');
   }
 
   send404(stringBody?: any, options?: any) {
@@ -90,7 +83,7 @@ export class ResponseAdapter extends HttpResponse {
 
   private setHtmlHeaders(stringBody: string) {
     return {
-      'Content-Length': Buffer.byteLength(stringBody),
+      'Content-Length': Buffer.byteLength(stringBody ?? ''),
       'Content-Type': 'text/html',
       'accept-encoding': 'gzip',
     };
@@ -109,7 +102,7 @@ export class ResponseAdapter extends HttpResponse {
 
   private setJsonHeaders(stringBody: string) {
     return {
-      'Content-Length': Buffer.byteLength(Buffer.from(stringBody)),
+      'Content-Length': Buffer.byteLength(Buffer.from(stringBody ?? '')),
       'accept-encoding': 'gzip',
       'Content-Type': 'application/json',
       'content-security-policy': 'self',
