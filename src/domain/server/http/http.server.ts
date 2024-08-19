@@ -1,14 +1,10 @@
 import * as http from 'http';
-import { Http2ServerRequest } from 'http2';
-import { Socket } from 'net';
-import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
-import { IRouter } from '../../types';
-import { IServer, Server } from '../server';
-
-
-
-// Traiter la réponse...
+import {Http2ServerRequest} from 'http2';
+import {Socket} from 'net';
+import {Readable} from 'stream';
+import {ReadableStream} from 'stream/web';
+import {IRouter} from '../../types';
+import {IServer, Server} from '../server';
 
 export class HttpServer extends Server implements IServer {
   private server: http.Server;
@@ -44,43 +40,26 @@ export class HttpServer extends Server implements IServer {
     } as RequestInit;
 
     if (!(method === 'GET' || method === 'HEAD')) {
-      init.body = JSON.stringify(incoming) || Readable.toWeb(incoming) as ReadableStream<Uint8Array>;
+      init.body =
+        JSON.stringify(incoming) ||
+        (Readable.toWeb(incoming) as ReadableStream<Uint8Array>);
       (init as any).duplex = 'half';
     }
 
     return new Request(url, init);
   };
 
-
   onRequest() {
-    this.server.on('request', async (request: any, response: any) => {
+    this.server.on('request', (request: any, response: any) => {
       let body = '';
-      // TODO: support http POST and body process 
-      
+      // TODO: support http POST and body process
+      if(['POST', 'PUT'].includes(request.method))
+        request.on('data', (chunk: any) => {
+          body += chunk;
+          request.body = body;
+        });
+
       return this.dispatch(request, response);
-
-      request.on('data', (chunk: any) => {
-        body += chunk;
-      });
-
-      const getProtocol = (req: any) => {
-        let proto = req.connection.encrypted ? 'https' : 'http';
-        proto = req.headers['x-forwarded-proto'] || proto;
-        return proto.split(/\s*,\s*/)[0];
-      }
-
-      const urls = new URL(request.url as string, `${getProtocol(request)}://${request.headers.host}${request.url}`);
-
-      request.on('end', async () => {
-        if (body !== '')
-          request.body = body as any;
-        await this.router.fetch(request, response);
-      });
-
-      if (process.env.MODE === 'event')
-        await Promise.resolve(this.router.event.emit('fetch', request, response));
-      else
-        await this.router.fetch(request, response);
     });
   }
 

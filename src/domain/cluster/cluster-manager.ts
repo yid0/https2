@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import cluster, { Cluster } from 'node:cluster';
+import cluster, {Cluster} from 'node:cluster';
 import * as os from 'node:os';
-import { IConfig } from '../../config/application-config';
-import { ClusterError } from '../error/error';
-import { IServeManager } from '../server/server-manager';
+import {IConfig} from '../../config/application-config';
+import {ClusterError} from '../error/error';
+import {IServeManager} from '../server/server-manager';
 
 export interface ICluster {
   config: IConfig;

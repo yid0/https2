@@ -1,5 +1,5 @@
 import * as http2 from 'http2';
-import { BaseRequest, BaseResponse, Mime } from '../../../types';
+import {BaseRequest, BaseResponse, MimeType} from '../../../types';
 
 interface IResponse {
   body: object;
@@ -10,7 +10,7 @@ class HttpResponse extends Response implements IResponse {
   body: object | any;
 
   constructor(response: BaseResponse) {
-    super()
+    super();
     this.response = response;
     this.body = response.body;
   }
@@ -19,13 +19,11 @@ class HttpResponse extends Response implements IResponse {
     this.response.writeHead(statusCode, headers);
   }
 
-
   end(body: any, encoding?: BufferEncoding, cb?: () => void) {
     this.response.end(body);
   }
 
   getBody() {
-    //console.log( "getBody", this.body)
     return this.body;
   }
 
@@ -39,37 +37,37 @@ export class ResponseAdapter extends HttpResponse {
     super(response);
   }
 
-  async adapt(mime?: Mime) {
-    return await Promise.resolve(this.sendDefaultResponse(this.getBodyString(), mime || 'text/html'));
-  }
+  reply(body: unknown, mime?: MimeType) {
 
-  apply(mime?: Mime) {
-    return this.adapt(mime);
-  }
+    return this.sendDefaultResponse(this.getBodyString(), mime || 'text/html');  }
 
-  async sendDefaultResponse(stringBody: string, mime: string) {
+
+
+  sendDefaultResponse(bodyString: string, mime: string): BaseResponse {
     switch (mime) {
       case 'html':
-        await Promise.resolve(this.response.writeHead(this.response.statusCode || 500, this.setHtmlHeaders(stringBody)));
-        return this.response.end(stringBody);
+          this.response.writeHead(
+            this.response.statusCode || 500,
+            this.setHtmlHeaders(bodyString),
+         
+        );
+        return this.response.end(bodyString);
       case 'json':
-        await Promise.resolve(this.response.writeHead(this.response.statusCode || 500, this.setJsonHeaders(stringBody)));
-        return await Promise.resolve(this.response.end(stringBody));
+       
+          this.response.writeHead(
+            this.response.statusCode || 500,
+            this.setJsonHeaders(bodyString),         
+        );
+        return  this.response.end(bodyString);
       case 'css':
-        this.response.writeHead(this.response.statusCode || 500, this.setCssHeaders(stringBody));
-        return this.response.end(stringBody);
+        this.response.writeHead(
+          this.response.statusCode || 500,
+          this.setCssHeaders(bodyString),
+        );
+        return this.response.end(bodyString);
       default:
-        this.send404('<h3> Page not Found !</h3>');
+        return this.send404('<h3> Page not Found ! </h3>');
     }
-  }
-
-  static notFound(request: BaseRequest, response: any) {
-    response.statusCode = 404;
-    return {
-      path: request.url,
-      status: 404,
-      message: 'Resource Not Found !',
-    };
   }
 
   send404(stringBody?: any, options?: any) {
@@ -85,7 +83,7 @@ export class ResponseAdapter extends HttpResponse {
 
   private setHtmlHeaders(stringBody: string) {
     return {
-      'Content-Length': Buffer.byteLength(stringBody),
+      'Content-Length': Buffer.byteLength(stringBody ?? ''),
       'Content-Type': 'text/html',
       'accept-encoding': 'gzip',
     };
@@ -94,7 +92,7 @@ export class ResponseAdapter extends HttpResponse {
   private setCssHeaders(stringBody: string) {
     return {
       'Content-Length': Buffer.byteLength(Buffer.from(stringBody)),
-      'Content-Type': 'text/css'
+      'Content-Type': 'text/css',
     };
   }
   private setCsvHeaders(res: BaseResponse): void {
@@ -104,7 +102,7 @@ export class ResponseAdapter extends HttpResponse {
 
   private setJsonHeaders(stringBody: string) {
     return {
-      'Content-Length': Buffer.byteLength(Buffer.from(stringBody)),
+      'Content-Length': Buffer.byteLength(Buffer.from(stringBody ?? '')),
       'accept-encoding': 'gzip',
       'Content-Type': 'application/json',
       'content-security-policy': 'self',
@@ -116,10 +114,10 @@ export class ResponseAdapter extends HttpResponse {
       'access-control-allow-origin': '*',
       'access-control-allow-methods': '*',
       'access-control-allow-headers': '*',
-      'age': '0',
+      age: '0',
       'cache-control': 'no-cache',
-      'httpOnly': 'true',
-      'x-https2-version': '1.0.0-beta'
+      httpOnly: 'true',
+      'x-https2-version': '1.0.0-beta',
     };
   }
 }

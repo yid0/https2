@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Define prototype for lightweight pseudo Request object
 
-import { IncomingMessage } from 'node:http';
-import type { Http2ServerRequest } from 'node:http2';
-import { Readable } from 'node:stream';
-import { ReadableStream } from 'stream/web';
+import {IncomingMessage} from 'node:http';
+import type {Http2ServerRequest} from 'node:http2';
+import {Readable} from 'node:stream';
+import {ReadableStream} from 'stream/web';
 const getRequestCache = Symbol('getRequestCache');
 const requestCache = Symbol('requestCache');
 const incomingKey = Symbol('incomingKey');
@@ -69,7 +69,6 @@ export class HttpRequestLike<T = IncomingMessage | Http2ServerRequest> {
   originalRequest: T;
 
   constructor(originalRequest: T) {
-
     this.originalRequest = newRequest(originalRequest as any) as T;
   }
 
@@ -121,4 +120,3 @@ export const BaseRequestIncoming = (
 
   return new Request(url, init);
 };
-

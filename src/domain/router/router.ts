@@ -1,10 +1,10 @@
 /* eslint-disable no-useless-catch */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import EventEmitter from 'events';
-import { RouterError } from '../error/error';
-import { RouteOption } from '../middleware';
-import { ResponseFlyweight } from '../server/http/response/flyweigth';
-import { ResponseAdapter } from '../server/http/response/response-adapter';
+import {RouterError} from '../error/error';
+import {RouteOption} from '../middleware';
+import {ResponseFlyweight} from '../server/http/response/flyweigth';
+import {ResponseAdapter} from '../server/http/response/response-adapter';
 import {
   BaseRequest,
   BaseResponse,
@@ -13,8 +13,8 @@ import {
   Handler,
   HttpRoute,
   IRouter,
-  Mime,
-  RouterDispatcherType
+  MimeType,
+  RouterDispatcherType,
 } from '../types';
 
 export abstract class RouterFactory {
@@ -26,34 +26,34 @@ export abstract class RouterFactory {
 export class RouterDispatcher implements IRouter {
   regex!: RegExp;
   type!: RouterDispatcherType;
-  request!: BaseRequest | any;
-  response!: BaseResponse;
+  request!: BaseRequest;
+  response!: ResponseAdapter;
   event: EventEmitter;
-  private bodyType!: Mime;
+  private bodyType!: MimeType;
 
   constructor(
     type: RouterDispatcherType,
-    private defaultHandler: Handler = ResponseAdapter.notFound as any,
-    public routes: Map<string, HttpRoute> = new Map(),
+    public routes: HttpRoute[]  = []
   ) {
     this.type = type;
     this.event = new EventEmitter();
     this.event.on('fetch', async (request: BaseRequest, response: BaseResponse) => {
-      return await this.fetch(request, response);
+      return this.fetch(request, response);
     });
   }
 
   onInit(path: string): RegExp {
     this.regex = RegExp(
-      `^${path
-        .replace(/\/+(\/|$)/g, '$1') // strip double & trailing splash
-        .replace(/(\/?\.?):(\w+)\+/g, '($1(?<$2>*))') // greedy params
-        .replace(/(\/?\.?):(\w+)/g, '($1(?<$2>[^$1/]+?))') // named params and image format
-        .replace(/\./g, '\\.') // dot in path
-        .replace(/(\/?)\*/g, '($1.*)?') // wildcard
+      `^${
+        path
+          .replace(/\/+(\/|$)/g, '$1') // strip double & trailing splash
+          .replace(/(\/?\.?):(\w+)\+/g, '($1(?<$2>*))') // greedy params
+          .replace(/(\/?\.?):(\w+)/g, '($1(?<$2>[^$1/]+?))') // named params and image format
+          .replace(/\./g, '\\.') // dot in path
+          .replace(/(\/?)\*/g, '($1.*)?') // wildcard
       }/*$`,
     );
-    return this.regex
+    return this.regex;
   }
 
   async fetch(
@@ -63,111 +63,142 @@ export class RouterDispatcher implements IRouter {
     ...args: any
   ) {
     try {
-
+      
       this.request = request;
-      const body = await this.route(this.request, response);
-      response.body = body;
-      this.response = response;
 
-      if (process.env.MODE as any !== 'event') {
-        return new ResponseFlyweight<BaseResponse>().getResponse(this.response).adapt(this.bodyType);
+      await this.route(this.request,response);
+
+      //console.log( 'RS', response )
+      if (process.env.MODE !== 'event') {
+        return new ResponseFlyweight<ResponseAdapter>()
+          .getResponse(response)
+          .reply(response.body, this.bodyType);
       } else {
-        return await Promise.resolve(this.event.emit('response', this.response as BaseResponse, {
-          body,
-          extension: this.bodyType
-        }));
-      }
+        return this.event.emit('response', response, {
+          body:  response.body,
+          extension: this.bodyType,
+        });
+      }   
     } catch (err: any) {
-      throw new RouterError(`fetch binding ${err.name}: ${JSON.stringify(err)}`);
+      throw new RouterError(`fetch binding ${err.name}: ${err.stack}`);
     }
   }
 
-  async route(
-    request: any,
-    response: BaseResponse,
-    forward?: () => void
-  ): Promise<any> {
-
-    for (const [path, expectedRoute] of this.routes) {
-
-      if (expectedRoute.path.test(request.url) && (expectedRoute.handler || expectedRoute.middleware?.handler)) {
+  async route(request: any, response: BaseResponse, forward?: () => void): Promise<ResponseAdapter | unknown> {
+    let body;
+    for ( let expectedRoute of this.routes) {
+      if (
+        expectedRoute.path.test(request.url) &&
+        (expectedRoute.handler || expectedRoute.middleware?.handler)
+      ) {
 
         if (expectedRoute.method === 'ANY' || expectedRoute.method === request.method) {
-
           if (expectedRoute.middleware?.before?.length) {
-
-            await Promise.resolve(expectedRoute.middleware?.before?.map(async middleware => {
-              await middleware(request, response);
-            }));
+            await Promise.resolve(
+              expectedRoute.middleware?.before?.map(async middleware => {
+                await middleware(request, response);
+              }),
+            );
           }
 
-          const body = await Promise.resolve((expectedRoute.handler as DispatchFunction)(request, response)) as any;
+          body = await Promise.resolve(
+            (expectedRoute.handler as DispatchFunction)(request, response),
+          ) as unknown as any;
+
+           response.body = body;   
 
           if (expectedRoute.middleware?.after?.length) {
-            await Promise.resolve(expectedRoute.middleware?.after?.map(async middleware => {
-              await middleware(request, response);
-            }));
+            await Promise.resolve(
+              expectedRoute.middleware?.after?.map(async middleware => {
+                await middleware(request, response);
+              }),
+            );
           }
-
-          return await this.doResponse(body);
-
-        }
-      }
+          return this.reply(body);
+      } 
     }
-    return this.defaultHandler(request as any, response as any);
+   }
+
   }
 
-  private doResponse(body: any): Promise<unknown> {
+  private reply(body: any): Promise<unknown> {
     const bodyType = typeof body;
     switch (bodyType) {
       case 'object':
         this.bodyType = 'json';
         return body;
-      case 'string':
+      default:
         this.bodyType = 'html';
         return body;
-      default:
-        throw new RouterError(`response type not supported, got : ${this.bodyType}`);
     }
   }
 
-  add(route: HttpRoute) {
-    console.log("ADD method")
+  add(route: HttpRoute) : HttpRoute{
 
-    //const route = { method, path: this.onInit(path), handler : middleware?.handler, middleware };
-    this.routes.set(`${route.method}:${route.path}`, {
-      ...route
+    this.routes.push( {
+      ...route,
+      path  : this.onInit("GET:"+ route.path),
     });
     return route;
   }
 
-  any(path: string, handler: Handler) {
-    this.routes.set(path, { method: 'ANY', path: this.onInit(path), handler });
+  any(path: string, handler: Handler) :void {
+    this.routes.push({method: 'ANY', path: this.onInit(path), handler});
   }
 
-  delete(path: string, middleware: ChainedMiddleware, handler: Handler) {
-    //return this.routes[path] = { method: 'DELETE', path: this.onInit(path), handler };
+  delete(path: string, middleware: ChainedMiddleware, handler: Handler) :void {
+    this.routes.push({method: 'DELETE', path: this.onInit(path), handler});
   }
 
-  get(path: string, middleware: RouteOption) {
-    //this.routes.set(path, { method: 'GET', path: this.onInit(path), handler: middleware.handler, middleware });
-    this.routes.set('GET:' + path, { method: 'GET', path: this.onInit(path), handler: middleware.handler, middleware });
-
+  get(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'GET',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });
+  }
+  
+  head(path: string, middleware: RouteOption) :void {
+    this.routes.push( {
+      method: 'HEAD',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    }); 
   }
 
-  head(path: string, middleware: ChainedMiddleware, handler?: Handler) {
-    //this.routes[path] = { method: 'HEAD', path: this.onInit(path), handler };
+  options(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'OPTION',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });
   }
-  options(path: string, handler: Handler) {
-    //this.routes[path] = { method: 'OPTIONS', path: this.onInit(path), handler };
+
+  patch(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'PATCH',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });  
   }
-  patch(path: string, middleware: ChainedMiddleware, handler?: Handler) {
-    //this.routes[path] = { method: 'PATCH', path: this.onInit(path), handler };
+  post(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'POST',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });
   }
-  post(path: string, middleware: RouteOption) {
-    this.routes.set('POST:' + path, { method: 'POST', path: this.onInit(path), handler: middleware.handler, middleware });
-  }
-  put(path: string, middleware: ChainedMiddleware, handler?: Handler) {
-    // this.routes[path] = { method: 'PUT', path: this.onInit(path), handler };
+  put(path: string, middleware: RouteOption) :void{
+    this.routes.push( {
+      method: 'PUT',
+      path: this.onInit(path),
+      handler: middleware.handler,
+      middleware,
+    });  
   }
 }

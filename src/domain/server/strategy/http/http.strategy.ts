@@ -1,12 +1,11 @@
-import { SecureServerOptions } from 'http2';
+import {SecureServerOptions} from 'http2';
 import * as http from 'node:http';
-import { IServer } from '../..';
-import { IRouter, ServerType } from '../../../types';
-import { HttpServer } from '../../http/http.server';
-import { IServerStrategy } from '../strategy';
+import {IServer} from '../..';
+import {IRouter, ServerType} from '../../../types';
+import {HttpServer} from '../../http/http.server';
+import {IServerStrategy} from '../strategy';
 
-export class HttpServerStrategy
-  implements IServerStrategy {
+export class HttpServerStrategy implements IServerStrategy {
   readonly key: ServerType = 'http';
   readonly port: number;
   server!: IServer;
@@ -24,5 +23,4 @@ export class HttpServerStrategy
     this.server = serverBuilder.build();
     this.server.start(port, serverOptions);
   }
-
 }

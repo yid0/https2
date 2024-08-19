@@ -1,7 +1,7 @@
-import { IConfig } from '../../config/application-config';
-import { ServerStrategyError } from '../error/error';
-import { IServer } from './server';
-import { IServerStrategy } from './strategy/strategy';
+import {IConfig} from '../../config/application-config';
+import {ServerStrategyError} from '../error/error';
+import {IServer} from './server';
+import {IServerStrategy} from './strategy/strategy';
 
 export interface IServeManager {
   startServer(config?: IConfig): void;
@@ -41,12 +41,14 @@ export class ServerManager implements IServeManager {
     if (!this.serverStrategies.has(Symbol(key))) {
       this.serverStrategies.set(Symbol(key), serverStrategy);
     } else
-      throw new ServerStrategyError(`${serverStrategy.key} strategy was already exists !`)
+      throw new ServerStrategyError(
+        `${serverStrategy.key} strategy was already exists !`,
+      );
     return this.serverStrategies;
   }
 
   startServer(config?: IConfig): void {
-    // TODO : use config intead 
+    // TODO : use config intead
     if (this.serverStrategies.size > 0) {
       this.serverStrategies.forEach(strategy => {
         if (strategy.key) strategy.apply(strategy.port, strategy.serverOptions);

@@ -9,7 +9,7 @@
 .*cache*
 
 *.tsbuildinfo
-
+bench*
 coverage
 dist
 **/env/**

@@ -29,5 +29,3 @@ export class ApplicationError extends Error {
     this.message += ' ' + message;
   }
 }
-
-
