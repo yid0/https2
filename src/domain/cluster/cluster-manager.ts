@@ -20,13 +20,15 @@ export class ClusterManager implements ICluster {
   constructor(serverManager: IServeManager, config: IConfig) {
     this.serverManager = serverManager;
     this.cluster = cluster;
-    this.numCPUs = config.http.cores ?? os.availableParallelism();
+    this.config = config;
+    this.numCPUs = this.resolveCpuCount(config);
   }
 
   start(): void {
     try {
       if (cluster.isPrimary) {
-        for (let i = 0; i < this.numCPUs; i++) {
+        const workers = this.numCPUs;
+        for (let i = 0; i < workers; i++) {
           cluster.fork();
         }
 
@@ -34,9 +36,8 @@ export class ClusterManager implements ICluster {
           console.log(`worker ${worker.process.pid} is online`);
         });
 
-        cluster.on('message', (worker, code, signal) => {
-          console.log(`Worker ${worker.process.pid}, ${code} ${signal}`);
-          this.serverManager.startServer(this.config);
+        cluster.on('message', (worker, message) => {
+          console.log(`Worker ${worker.process.pid} message: ${JSON.stringify(message)}`);
         });
 
         cluster.on('disconnect', (worker: any, code: string, signal: any) => {
@@ -44,7 +45,7 @@ export class ClusterManager implements ICluster {
           console.log(`process.env.NODE_UNIQUE_ID  ${worker.process.pid}`);
         });
 
-        cluster.on('eror', (worker: any, code: string, signal: any) => {
+        cluster.on('error', (worker: any, code: string, signal: any) => {
           console.log('child process disconnect with code ' + code);
           console.log(`process.env.NODE_UNIQUE_ID  ${worker.process.pid}`);
         });
@@ -58,6 +59,9 @@ export class ClusterManager implements ICluster {
           } else {
             console.log('worker success!');
           }
+          if (!worker.exitedAfterDisconnect) {
+            cluster.fork();
+          }
         });
       } else {
         this.serverManager.startServer(this.config);
@@ -65,5 +69,21 @@ export class ClusterManager implements ICluster {
     } catch (err: any) {
       throw new ClusterError(err.message);
     }
+  }
+
+  private resolveCpuCount(config: IConfig): number {
+    const cores = [
+      config.http?.cores ?? 0,
+      config.https?.cores ?? 0,
+      config.http2?.cores ?? 0,
+      config.static?.cores ?? 0,
+    ]
+      .filter((value) => value > 0);
+
+    if (cores.length === 0) {
+      return os.availableParallelism();
+    }
+
+    return Math.max(...cores);
   }
 }
