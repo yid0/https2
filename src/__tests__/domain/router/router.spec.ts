@@ -72,4 +72,74 @@ describe('RouterDispatcher test suites ... :', () => {
         expect(JSON.stringify(body)).to.be.equal(JSON.stringify(TestController.prototype.testOk()));
     });
 
+    test('should register and execute PUT route', async () => {
+        router.put('/resource', { handler: () => ({ updated: true }) } as any);
+
+        const req = {
+            method: 'PUT',
+            url: '/resource',
+        };
+
+        const res = {};
+        const body = await router.route(req, res as any);
+
+        expect(body).to.be.deep.equal({ updated: true });
+    });
+
+    test('should register and execute DELETE route', async () => {
+        router.delete('/resource', [], () => ({ deleted: true }));
+
+        const req = {
+            method: 'DELETE',
+            url: '/resource',
+        };
+
+        const res = {};
+        const body = await router.route(req, res as any);
+
+        expect(body).to.be.deep.equal({ deleted: true });
+    });
+
+    test('should register and execute PATCH route', async () => {
+        router.patch('/resource', { handler: () => ({ patched: true }) } as any);
+
+        const req = {
+            method: 'PATCH',
+            url: '/resource',
+        };
+
+        const res = {};
+        const body = await router.route(req, res as any);
+
+        expect(body).to.be.deep.equal({ patched: true });
+    });
+
+    test('should register and execute HEAD route', async () => {
+        router.head('/health', [] as any, () => '');
+
+        const req = {
+            method: 'HEAD',
+            url: '/health',
+        };
+
+        const res = {};
+        const body = await router.route(req, res as any);
+
+        expect(body).to.be.deep.equal('');
+    });
+
+    test('should register and execute OPTIONS route', async () => {
+        router.options('/resource', () => 'ok');
+
+        const req = {
+            method: 'OPTIONS',
+            url: '/resource',
+        };
+
+        const res = {};
+        const body = await router.route(req, res as any);
+
+        expect(body).to.be.deep.equal('ok');
+    });
+
 });

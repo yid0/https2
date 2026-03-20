@@ -54,33 +54,51 @@ export class HttpServer extends Server implements IServer {
 
   onRequest() {
     this.server.on('request', async (request: any, response: any) => {
-      let body = '';
-      // TODO: support http POST and body process 
-      
-      return this.dispatch(request, response);
+      const maxBodySize = Number(process.env.MAX_BODY_SIZE || 1_048_576); // 1MB by default
+      let received = 0;
+      const chunks: Buffer[] = [];
+      let aborted = false;
 
-      request.on('data', (chunk: any) => {
-        body += chunk;
+      request.on('data', (chunk: Buffer) => {
+        if (aborted) {
+          return;
+        }
+        received += chunk.length;
+        if (received > maxBodySize) {
+          response.statusCode = 413;
+          response.end('Payload Too Large');
+          request.destroy();
+          aborted = true;
+          return;
+        }
+        chunks.push(chunk);
       });
-
-      const getProtocol = (req: any) => {
-        let proto = req.connection.encrypted ? 'https' : 'http';
-        proto = req.headers['x-forwarded-proto'] || proto;
-        return proto.split(/\s*,\s*/)[0];
-      }
-
-      const urls = new URL(request.url as string, `${getProtocol(request)}://${request.headers.host}${request.url}`);
 
       request.on('end', async () => {
-        if (body !== '')
-          request.body = body as any;
-        await this.router.fetch(request, response);
+        if (aborted || response.writableEnded) {
+          return;
+        }
+
+        if (chunks.length) {
+          const rawBody = Buffer.concat(chunks).toString();
+          try {
+            request.body = JSON.parse(rawBody);
+          } catch {
+            request.body = rawBody;
+          }
+        }
+
+        if (process.env.MODE === 'event')
+          await Promise.resolve(this.router.event.emit('fetch', request, response));
+        else
+          await this.router.fetch(request, response);
       });
 
-      if (process.env.MODE === 'event')
-        await Promise.resolve(this.router.event.emit('fetch', request, response));
-      else
-        await this.router.fetch(request, response);
+      request.on('error', (err: Error) => {
+        console.error('request error', err);
+        response.statusCode = 400;
+        response.end('Bad Request');
+      });
     });
   }
 

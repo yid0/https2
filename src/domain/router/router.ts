@@ -132,9 +132,6 @@ export class RouterDispatcher implements IRouter {
   }
 
   add(route: HttpRoute) {
-    console.log("ADD method")
-
-    //const route = { method, path: this.onInit(path), handler : middleware?.handler, middleware };
     this.routes.set(`${route.method}:${route.path}`, {
       ...route
     });
@@ -146,28 +143,53 @@ export class RouterDispatcher implements IRouter {
   }
 
   delete(path: string, middleware: ChainedMiddleware, handler: Handler) {
-    //return this.routes[path] = { method: 'DELETE', path: this.onInit(path), handler };
+    this.setRoute('DELETE', path, middleware as any, handler);
   }
 
   get(path: string, middleware: RouteOption) {
-    //this.routes.set(path, { method: 'GET', path: this.onInit(path), handler: middleware.handler, middleware });
-    this.routes.set('GET:' + path, { method: 'GET', path: this.onInit(path), handler: middleware.handler, middleware });
+    this.setRoute('GET', path, middleware, middleware.handler as any);
 
   }
 
   head(path: string, middleware: ChainedMiddleware, handler?: Handler) {
-    //this.routes[path] = { method: 'HEAD', path: this.onInit(path), handler };
+    this.setRoute('HEAD', path, middleware as any, handler || (middleware as any)?.handler);
   }
   options(path: string, handler: Handler) {
-    //this.routes[path] = { method: 'OPTIONS', path: this.onInit(path), handler };
+    this.setRoute('OPTIONS', path, undefined, handler);
   }
   patch(path: string, middleware: ChainedMiddleware, handler?: Handler) {
-    //this.routes[path] = { method: 'PATCH', path: this.onInit(path), handler };
+    this.setRoute('PATCH', path, middleware as any, handler || (middleware as any)?.handler);
   }
   post(path: string, middleware: RouteOption) {
-    this.routes.set('POST:' + path, { method: 'POST', path: this.onInit(path), handler: middleware.handler, middleware });
+    this.setRoute('POST', path, middleware, middleware.handler as any);
   }
   put(path: string, middleware: ChainedMiddleware, handler?: Handler) {
-    // this.routes[path] = { method: 'PUT', path: this.onInit(path), handler };
+    this.setRoute('PUT', path, middleware as any, handler || (middleware as any)?.handler);
+  }
+
+  private setRoute(method: string, path: string, middleware?: RouteOption | ChainedMiddleware, handler?: Handler) {
+    const routeOptions = this.extractRouteOption(middleware);
+    this.routes.set(`${method.toUpperCase()}:${path}`, {
+      method: method.toUpperCase(),
+      path: this.onInit(path),
+      handler: handler ?? routeOptions?.handler,
+      middleware: routeOptions
+    });
+  }
+
+  private extractRouteOption(middleware?: RouteOption | ChainedMiddleware): RouteOption | undefined {
+    if (!middleware) {
+      return undefined;
+    }
+
+    if (Array.isArray(middleware)) {
+      return middleware.find((item): item is RouteOption => this.isRouteOption(item));
+    }
+
+    return middleware;
+  }
+
+  private isRouteOption(item: unknown): item is RouteOption {
+    return typeof item === 'object' && item !== null && 'handler' in (item as Record<string, unknown>);
   }
 }
